@@ -94,7 +94,7 @@
                 userName: "Sarah Tan",
                 locationId: 1,
                 locationName: "Bishan-Ang Mo Kio Park",
-                date: "2026-02-15",
+                date: "2026-02-16",
                 time: "07:00",
                 type: "Strength Training",
                 level: "Intermediate",
@@ -107,18 +107,51 @@
                 userName: "Marcus Wong",
                 locationId: 2,
                 locationName: "East Coast Park Fitness Corner",
-                date: "2026-02-15",
+                date: "2026-02-16",
                 time: "18:30",
                 type: "Cardio",
                 level: "Beginner",
                 description: "Evening jog and light workout session",
                 participants: 2
+            },
+            {
+                id: 3,
+                userId: 4,
+                userName: "Priya Kumar",
+                locationId: 3,
+                locationName: "Bedok Reservoir Park",
+                date: "2026-02-17",
+                time: "06:30",
+                type: "HIIT",
+                level: "Advanced",
+                description: "High intensity morning workout - ready to sweat!",
+                participants: 1
             }
         ];
 
         const Icon = ({ icon, size = 24, className = "" }) => {
             const IconComponent = icon;
             return <IconComponent size={size} className={className} />;
+        };
+
+        // Storage wrapper using localStorage
+        const storage = {
+            get: (key) => {
+                try {
+                    const item = localStorage.getItem(key);
+                    return item ? JSON.parse(item) : null;
+                } catch (e) {
+                    console.error('Storage get error:', e);
+                    return null;
+                }
+            },
+            set: (key, value) => {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch (e) {
+                    console.error('Storage set error:', e);
+                }
+            }
         };
 
         function FitConnectApp() {
@@ -151,44 +184,34 @@
                 loadConversations();
             }, []);
 
-            const loadSessions = async () => {
-                try {
-                    const result = await window.storage.get('sessions');
-                    if (result && result.value) {
-                        setSessions(JSON.parse(result.value));
-                    } else {
-                        // Initialize with sample data
-                        setSessions(INITIAL_SESSIONS);
-                        await window.storage.set('sessions', JSON.stringify(INITIAL_SESSIONS));
-                    }
-                } catch (error) {
-                    console.log('No existing sessions, using defaults');
+            const loadSessions = () => {
+                const stored = storage.get('fitconnect_sessions');
+                if (stored && Array.isArray(stored)) {
+                    setSessions(stored);
+                } else {
                     setSessions(INITIAL_SESSIONS);
+                    storage.set('fitconnect_sessions', INITIAL_SESSIONS);
                 }
             };
 
-            const loadConversations = async () => {
-                try {
-                    const result = await window.storage.get('conversations');
-                    if (result && result.value) {
-                        setConversations(JSON.parse(result.value));
-                    }
-                } catch (error) {
-                    console.log('No existing conversations');
+            const loadConversations = () => {
+                const stored = storage.get('fitconnect_conversations');
+                if (stored) {
+                    setConversations(stored);
                 }
             };
 
-            const saveSessions = async (updatedSessions) => {
+            const saveSessions = (updatedSessions) => {
                 setSessions(updatedSessions);
-                await window.storage.set('sessions', JSON.stringify(updatedSessions));
+                storage.set('fitconnect_sessions', updatedSessions);
             };
 
-            const saveConversations = async (updatedConversations) => {
+            const saveConversations = (updatedConversations) => {
                 setConversations(updatedConversations);
-                await window.storage.set('conversations', JSON.stringify(updatedConversations));
+                storage.set('fitconnect_conversations', updatedConversations);
             };
 
-            const handleCreateSession = async () => {
+            const handleCreateSession = () => {
                 if (!newSession.locationId || !newSession.date || !newSession.time) {
                     alert('Please fill in all required fields');
                     return;
@@ -209,7 +232,7 @@
                     participants: 1
                 };
 
-                await saveSessions([...sessions, session]);
+                saveSessions([...sessions, session]);
                 setShowNewSession(false);
                 setNewSession({
                     locationId: '',
@@ -239,7 +262,7 @@
                 setShowChat(true);
             };
 
-            const handleSendMessage = async () => {
+            const handleSendMessage = () => {
                 if (!messageInput.trim() || !currentChat) return;
 
                 const chatId = currentChat.id;
@@ -255,7 +278,7 @@
                     [chatId]: [...(conversations[chatId] || []), newMessage]
                 };
 
-                await saveConversations(updatedConversations);
+                saveConversations(updatedConversations);
                 setMessageInput('');
             };
 
@@ -473,7 +496,7 @@
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 flex items-center space-x-2"
                                     >
                                         <Icon icon={Plus} size={20} />
-                                        <span>New Session</span>
+                                        <span className="hidden sm:inline">New Session</span>
                                     </button>
                                 </div>
 
